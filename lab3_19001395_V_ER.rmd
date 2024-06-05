@@ -1,0 +1,136 @@
+---
+title: "Lab 3 - 19001395 - V"
+author: "Otto Chamo"
+output: html_notebook
+---
+```{r}
+library(dplyr)
+library(ggplot2)
+library(caret)
+```
+# Ejercicio 1
+
+Utilizando R realice una función que dado un dataframe
+cualquiera de dos columnas, donde la primera (índice 1) sea el valor de
+la variable independiente (X) y la segunda sea el valor de una variable
+dependiente (Y), devuelva una lista con los siguientes elementos:
+
+## 1) Un arreglo con lo valores de los estimadores para $B_0$ y $B_1$
+
+```{r}
+calculate_estimators <- function(df) {
+  x <- df[, 1]
+  y <- df[, 2]
+  n <- length(x)
+
+  num_b1 <- (sum(x) * sum(y) - n * (sum(x * y)))
+  denominator_b1 <- ((sum(x)^2) - n * sum(x^2))
+  b1 <- num_b1 / denominator_b1
+
+  num_b0 <- (sum(y) - b1 * (sum(x)))
+  b0 <- num_b0 / length(x)
+
+  result <- list(B_0 = b0, B_1 = b1)
+  return(result)
+}
+
+
+calculate_r_squared <- function(df, estimators) {
+  x <- df[, 1]
+  y <- df[, 2]
+
+  y_pred <- estimators$B_0 + estimators$B_1 * x
+
+  mean_y <- mean(y)
+
+
+  r_squared_num <- sum((y_pred - mean_y)^2)
+  r_squared_den <- sum((y - mean_y)^2)
+  s <- y - mean_y
+  r2 <- r_squared_num / r_squared_den
+
+  return(r2)
+
+}
+
+calculate_r <- function(r2) {
+  return(sqrt(r2))
+}
+
+calculate_residuals <- function(df, estimators) {
+  x <- df[, 1]
+  y <- df[, 2]
+
+  y_pred <- estimators$B_0 + estimators$B_1 * x
+
+  residuals <- y - y_pred
+
+  return(y_pred)
+}
+
+```
+
+
+```{r}
+randomDf <- data.frame(
+  X = c(3, 4, 5, 7, 8),
+  Y = c(2, 4, 5, 4, 5)
+)
+
+estimators <- calculate_estimators(randomDf)
+print(estimators)
+
+```
+
+```{r}
+model <- lm(randomDf[, 2] ~ randomDf[, 1])
+summary(model)
+```
+
+## 2) El valor del coeficiente de determinación $r^2$ del modelo.
+
+```{r}
+r2 <- calculate_r_squared(randomDf, estimators)
+print(r2)
+```
+
+## 3) El coeficiente de correlación r (raíz cuadrada de $r^2$)
+```{r}
+r_coef <- calculate_r(r2)
+print(r_coef)
+```
+
+
+## 4) Un arreglo con los valores de los residuos
+
+```{r}
+residuals <- calculate_residuals(randomDf, estimators)
+
+print(residuals)
+```
+## 5) Una gráfica con la nube de puntos y la recta de regresión del modelo
+```{r}
+regression_line <- function(df, estimators) {
+  x_seq <- seq(min(df[, 1]), max(df[, 1]), length.out = 100)
+
+  y_pred <- estimators$B_0 + estimators$B_1 * x_seq
+
+  regressionLine <- data.frame(X = x_seq, Y = y_pred)
+
+  return(regressionLine)
+}
+
+regressionLine <- regression_line(randomDf, estimators)
+
+regressionLinePlot <- ggplot(randomDf, aes(x = X, y = Y)) +
+        geom_point(color = "blue", size=3) +
+        geom_line(data = regressionLine, aes(x = X, y = Y), color = "red", size = 1) +
+        labs(title = "Nube de puntos y linea de regresión",
+             x = "X",
+             y = "Y"
+        ) +
+        theme_minimal()
+
+print(regressionLinePlot)
+
+```
