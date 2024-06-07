@@ -3,7 +3,7 @@ title: "Lab 3 - 19001395 - V"
 author: "Otto Chamo"
 output: html_notebook
 ---
-```{r}
+```{r include=FALSE}
 library(dplyr)
 library(ggplot2)
 library(caret)
@@ -79,7 +79,6 @@ randomDf <- data.frame(
 
 estimators <- calculate_estimators(randomDf)
 print(estimators)
-
 ```
 
 ```{r}
@@ -134,3 +133,78 @@ regressionLinePlot <- ggplot(randomDf, aes(x = X, y = Y)) +
 print(regressionLinePlot)
 
 ```
+
+# Ejercicio 2
+
+## 1. Realice un análisis estadístico sobre todas las variables del dataset, recuerde que pude usar la función summary().
+
+```{r}
+admissionsDatasetPath <- "Admisions.csv"
+
+admissionsDf <- read.csv(admissionsDatasetPath)
+
+admissionsDf
+```
+
+```{r}
+summary(admissionsDf)
+```
+
+Podemos notar que no todas las variables tienen la misma escala, unas tienes valores mucho más bajos que otros, este tipo de condiciones
+puede llevar a problemas de entrenamiento en el modelo, porque puede asignarle mayor importancia a algunas variables que no tienen tanta relevancia, deberiamos llevarlos todos a una misma escala.
+
+## 2. Realice una gráfica de densidad para cada una de las variables numéricas en el dataset: GRE.Score, TOEFEL.Score, CGPA y Chance of Admit
+
+```{r}
+plotColumn <- function(data, x_axis, title, x_lab, y_lab) {
+  plottedDensity <- ggplot(data, aes(x = x_axis)) + 
+  geom_density(fill = "blue", alpha = 0.5) +
+  labs(title = title, x = x_lab, y = y_lab)
+  
+  return(plottedDensity)
+}
+```
+
+
+### Gráfica de densidad GRE Score
+
+```{r}
+plotColumn(admissionsDf, admissionsDf$GRE.Score, "Densidad de GRE Score", x_lab="GRE Score", y_lab = "Densidad")
+```
+
+### Gráfica de densidad de TOEFEL Score
+
+```{r}
+plotColumn(admissionsDf, admissionsDf$TOEFL.Score, "Densidad de TOEFEL.Score", x_lab = "TOEFEL Score", "Densidad")
+```
+
+### Gráfica de densidad de CGPA
+
+```{r}
+plotColumn(admissionsDf, admissionsDf$CGPA, "Densidad de CGPA", x_lab = "CGPA", y_lab = "Densidad")
+```
+
+### Gráfica de densidad de Chance of Admit
+
+```{r}
+plotColumn(admissionsDf, admissionsDf$Chance.of.Admit, "Densidad de Chance of Admit", x_lab = "Chance of Admit", y_lab = "Densidad")
+```
+
+## 3. Realice una gráfica de correlación entre las variables del inciso 
+anterior
+
+
+
+## 4. Realice comentarios sobre el análisis estadístico de las variable numéricas y la gráfica de correlación
+
+
+## 5. Realice un scatter plot (nube de puntos) de todas las variables  numéricas contra la variable Chance of Admit
+
+## 6. Utilizando la función train y trainControl para crear un cross-validation y le permita evaluar los siguientes modelos
+Posteriormente cree una lista ordenando de mejor a peor cual es el 
+mejor modelo en predicción, recuerde que es necesario caclular el 
+RMSE para poder armar correctamente la lista. 
+
+
+
+
