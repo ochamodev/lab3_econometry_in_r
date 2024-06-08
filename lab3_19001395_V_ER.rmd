@@ -7,6 +7,7 @@ output: html_notebook
 library(dplyr)
 library(ggplot2)
 library(caret)
+library(PerformanceAnalytics)
 ```
 # Ejercicio 1
 
@@ -143,7 +144,7 @@ admissionsDatasetPath <- "Admisions.csv"
 
 admissionsDf <- read.csv(admissionsDatasetPath)
 
-admissionsDf
+head(admissionsDf)
 ```
 
 ```{r}
@@ -193,17 +194,197 @@ plotColumn(admissionsDf, admissionsDf$Chance.of.Admit, "Densidad de Chance of Ad
 ## 3. Realice una gráfica de correlación entre las variables del inciso 
 anterior
 
+```{r}
+columnsToPlotDf <- admissionsDf %>%
+  select(GRE.Score, TOEFL.Score, CGPA, Chance.of.Admit)
+
+
+
+chart.Correlation(columnsToPlotDf, histogram = TRUE, method = "pearson")
+```
 
 
 ## 4. Realice comentarios sobre el análisis estadístico de las variable numéricas y la gráfica de correlación
 
+Podemos ver que exista una alta correlación entre las variables, pero la que mejor predice el chance de admisión es la de CGPA.
+Todas las correlaciones son positivas y podemos que casi tienen una distribucón normal.
 
 ## 5. Realice un scatter plot (nube de puntos) de todas las variables  numéricas contra la variable Chance of Admit
 
+```{r}
+scatterPlotGenerator <- function(data, x, y, title, x_lab, y_lab) {
+  
+  scatterPlot <- ggplot(data, aes(x = x, y = y)) + 
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = TRUE, color = "blue") +
+  labs(title = title, x = x_lab, y = y_lab) +
+  theme_minimal()
+  return(scatterPlot)
+}
+```
+
+```{r}
+scatterPlotGenerator(
+  admissionsDf,
+  x = admissionsDf$GRE.Score,
+  y = admissionsDf$Chance.of.Admit,
+  title = "GRE Score vs Chance of admit",
+  x_lab = "GRE Score",
+  y_lab = "Chance of admit"
+)
+```
+```{r}
+scatterPlotGenerator(
+  admissionsDf,
+  x = admissionsDf$TOEFL.Score,
+  y = admissionsDf$Chance.of.Admit,
+  title = "TOEFL Score vs Chance of admit",
+  x_lab = "TOEFL Score",
+  y_lab = "Chance of admit"
+)
+```
+```{r}
+scatterPlotGenerator(
+  admissionsDf,
+  x = admissionsDf$CGPA,
+  y = admissionsDf$Chance.of.Admit,
+  title = "CGPA vs Chance of admit",
+  x_lab = "CGPA",
+  y_lab = "Chance of admit"
+)
+```
+
 ## 6. Utilizando la función train y trainControl para crear un cross-validation y le permita evaluar los siguientes modelos
+
+```{r}
+createLrModel <- function(data, formula) {
+  train_control <- trainControl(method = "cv", number = 10)
+
+  lr_model <- train(formula, data = data, method = "lm", trControl = train_control)
+  
+  return(lr_model)
+}
+
+chanceOfAdmit <- "Chance.of.Admit"
+```
+
+### Chance of Admit ~ TOEFEL.Score.
+
+```{r}
+toefl_model <- createLrModel(admissionsDf, as.formula("Chance.of.Admit ~ TOEFL.Score"))
+
+print(toefl_model)
+summary(toefl_model)
+
+```
+### Chance of Admit ~ CGPA.
+```{r}
+cgpa_model <- createLrModel(admissionsDf, as.formula("Chance.of.Admit ~ CGPA"))
+print(cgpa_model)
+summary(cgpa_model)
+```
+
+### Chance of Admit ~ GRE.Score.
+```{r}
+greScore_model <- createLrModel(admissionsDf, as.formula("Chance.of.Admit ~ GRE.Score"))
+print(greScore_model)
+summary(greScore_model)
+```
+
+### Chance of Admit ~ TOEFEL.Score + CGPA.
+```{r}
+toeflCgpaModel <- createLrModel(admissionsDf, as.formula("Chance.of.Admit ~ TOEFL.Score + GRE.Score"))
+print(toeflCgpaModel)
+summary(toeflCgpaModel)
+```
+
+### Chance of Admit ~ TOEFEL.Score + GRE.Score.
+```{r}
+toeflGreScore <- createLrModel(admissionsDf, as.formula("Chance.of.Admit ~ TOEFL.Score + GRE.Score"))
+print(toeflGreScore)
+summary(toeflGreScore)
+```
+### Chance of Admit ~ GRE.Score + CGPA.
+```{r}
+greCgpaModel <- createLrModel(admissionsDf, as.formula("Chance.of.Admit ~ GRE.Score + CGPA"))
+print(greCgpaModel)
+summary(greCgpaModel)
+```
+
+### Chance of Admit ~ TOEFEL.Score + CGPA + GRE.Score.
+```{r}
+toeflCgpaGre <- createLrModel(admissionsDf, as.formula("Chance.of.Admit ~ TOEFL.Score + CGPA + GRE.Score"))
+print(toeflCgpaGre)
+summary(toeflCgpaGre)
+```
+
 Posteriormente cree una lista ordenando de mejor a peor cual es el 
 mejor modelo en predicción, recuerde que es necesario caclular el 
 RMSE para poder armar correctamente la lista. 
+
+
+```{r}
+rmseToeflModel <- toefl_model$results$RMSE
+rmseCgpaModel <- cgpa_model$results$RMSE
+rmseGreModel <- greScore_model$results$RMSE
+rmseToeflCgpa <- toeflCgpaModel$results$RMSE
+rmsetoeflGre <- toeflGreScore$results$RMSE
+rmseGreCgpa <- greCgpaModel$results$RMSE
+rmsetoeflCgpaGre <- toeflCgpaGre$results$RMSE
+
+
+modelResults <- data.frame(
+  Model = c(
+    "Chance of Admit ~ TOEFEL.Score",
+    "Chance of Admit ~ CGPA",
+    "Chance of Admit ~ GRE.Score",
+    "Chance of Admit ~ TOEFEL.Score + CGPA",
+    "Chance of Admit ~ TOEFEL.Score + GRE.Score",
+    "Chance of Admit ~ GRE.Score + CGPA",
+    "Chance of Admit ~ TOEFEL.Score + CGPA + GRE.Score"
+    ),
+  RMSE = c(
+    rmseToeflModel,
+    rmseCgpaModel,
+    rmseGreModel,
+    rmseToeflCgpa,
+    rmsetoeflGre,
+    rmseGreCgpa,
+    rmsetoeflCgpaGre
+  )
+)
+
+print(modelResults)
+```
+# Ejercicio 3
+
+A continuación se le muestran tres imágenes que muestran los 
+resultados obtenidos de correr la función summary() a dos modelos de 
+regresión lineal, para este ejercicio se le solicita que realice la 
+interpretación de las tablas resultantes. Recuerde tomar en cuenta la 
+signficancia de los parámetros (signfícancia local), la signficancia del 
+modelo (signficancia global), el valor del $r^2$: y cualquier observación que 
+considere relevante para determinar si el modelo estructuralmente es 
+adecuado o no
+
+## Modelo 1
+
+![Modelo1](assets/model1.png)
+
+El modelo 1 presenta el peor rendimiento de los 3, se puede ver que la significancia de las variables es irrelevante, el R^2 indica que no se ajusta tan bien a los datos y su rendimiento general a través del F statistic es muy bajo, este modelo no debe ser tomaod en cuenta.
+
+## Modelo 2
+
+![Modelo1](assets/model2.png)
+
+Podemos apreciar que este modelo es el que tiene el mejor rendimiento para predecir ROLL al tomar en cuenta todas las variables podemos ver que existe un significancia entre todas las variables, lo cuál nos indica que estas tienen una relación importante para poder predecir la variable ROLL, tiene un $R^2$ alto lo cual dice que tiene buen ajuste con los datos y un F statistic alto que indica que tendrá un buen desempeño general, habría que poner a prueba el desempeño del modelo contra los datos de validación para asegurarnos que no hay overfitting por tener un $R^2$ tan alto.
+
+
+## Modelo 3
+
+![Modelo1](assets/model3.png)
+
+El modelo 3 tiene un buen desempeño al tener un $R^2$ alto lo cual indica que hay buen ajuste de los valores, los valores tienen una significancia alta lo cual indica que hay una buena relación entre las variables para poder predecir el precio del taxi, por último tenemos un F statistic alto que indica un buen rendimiento general.
 
 
 
